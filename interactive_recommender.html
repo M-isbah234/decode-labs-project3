@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tech Stack Recommender — DecodeLabs</title>
+  <style>
+    /* ── Reset & base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-grad-a: #a8edea;
+      --bg-grad-b: #fed6e3;
+      --card:      #ffffff;
+      --accent:    #5c6bc0;
+      --accent2:   #26a69a;
+      --danger:    #ef5350;
+      --success:   #66bb6a;
+      --text-h:    #1a237e;
+      --text-body: #37474f;
+      --text-mute: #78909c;
+      --border:    #e0e0e0;
+      --gold:      #ffa000;
+      --silver:    #78909c;
+      --bronze:    #a1887f;
+      --radius:    14px;
+      --shadow:    0 8px 32px rgba(0,0,0,.10);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, var(--bg-grad-a) 0%, var(--bg-grad-b) 100%);
+      min-height: 100vh;
+      padding: 28px 16px 48px;
+      color: var(--text-body);
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .wrap { max-width: 860px; margin: 0 auto; }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    header h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      color: var(--text-h);
+      letter-spacing: -.5px;
+    }
+    header p  { color: var(--text-mute); margin-top: 6px; font-size: .95rem; }
+    .badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 5px 14px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 20px;
+      font-size: .78rem;
+      letter-spacing: .4px;
+    }
+
+    /* ── Cards ──────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    .card h2 {
+      font-size: 1.15rem;
+      color: var(--text-h);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Info banner ─────────────────────────────────────────────── */
+    .info-banner {
+      background: #e8f5e9;
+      border-left: 4px solid var(--accent2);
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: .875rem;
+      color: #2e7d32;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .info-banner b { color: #1b5e20; }
+
+    /* ── Mode toggle ─────────────────────────────────────────────── */
+    .mode-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: #fafafa;
+      color: var(--text-body);
+      font-size: .875rem;
+      cursor: pointer;
+      transition: all .2s;
+      font-weight: 500;
+    }
+    .mode-btn.active {
+      border-color: var(--accent);
+      background: #ede7f6;
+      color: var(--accent);
+    }
+
+    /* ── API URL row ─────────────────────────────────────────────── */
+    #apiUrlRow {
+      display: none;
+      margin-bottom: 16px;
+    }
+    #apiUrlRow.visible { display: flex; gap: 8px; align-items: center; }
+    #apiUrlRow label { font-size: .82rem; color: var(--text-mute); white-space: nowrap; }
+    #apiUrl {
+      flex: 1;
+      padding: 9px 12px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: .85rem;
+      font-family: monospace;
+    }
+    #apiStatus {
+      font-size: .75rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+    #apiStatus.ok  { background: #e8f5e9; color: #2e7d32; }
+    #apiStatus.err { background: #ffebee; color: #c62828; }
+
+    /* ── Skill inputs ────────────────────────────────────────────── */
+    .skill-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+
+    .skill-row {
+      display: flex;
+      gap: 8px;
+      animation: slideIn .2s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .skill-row input {
+      flex: 1;
+      padding: 11px 14px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: .95rem;
+      transition: border-color .2s;
+      color: var(--text-body);
+    }
+    .skill-row input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .skill-row input::placeholder { color: #b0bec5; }
+
+    .btn-rm {
+      padding: 11px 14px;
+      background: #ffebee;
+      color: var(--danger);
+      border: 2px solid #ffcdd2;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: bold;
+      transition: background .2s;
+    }
+    .btn-rm:hover { background: #ffcdd2; }
+
+    /* ── Action buttons ──────────────────────────────────────────── */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .btn {
+      padding: 11px 22px;
+      border: none;
+      border-radius: 8px;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,.15); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-add    { background: #e8f5e9; color: #2e7d32; border: 2px solid #c8e6c9; }
+    .btn-clear  { background: #fff3e0; color: #e65100; border: 2px solid #ffe0b2; }
+    .btn-go {
+      flex: 1;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent) 0%, #7c4dff 100%);
+      color: #fff;
+      font-size: 1rem;
+      border-radius: 10px;
+      margin-top: 16px;
+      border: none;
+    }
+
+    /* ── Error ───────────────────────────────────────────────────── */
+    .error-box {
+      display: none;
+      background: #ffebee;
+      border-left: 4px solid var(--danger);
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: .875rem;
+      color: #b71c1c;
+      margin-bottom: 14px;
+    }
+    .error-box.show { display: block; }
+
+    /* ── Spinner ─────────────────────────────────────────────────── */
+    .spinner-wrap {
+      display: none;
+      text-align: center;
+      padding: 36px 0;
+    }
+    .spinner-wrap.show { display: block; }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid #e0e0e0;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 0 auto 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Results ─────────────────────────────────────────────────── */
+    .results-wrap { display: none; }
+    .results-wrap.show { display: block; }
+
+    /* pipeline trace */
+    .trace {
+      background: #f8f9fa;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-family: monospace;
+      font-size: .78rem;
+      color: var(--text-mute);
+      margin-bottom: 22px;
+      line-height: 1.8;
+    }
+    .trace span.step { color: var(--accent); font-weight: 700; }
+    .trace span.val  { color: #2e7d32; }
+
+    /* rec cards */
+    .rec-card {
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      margin-bottom: 16px;
+      border-left: 5px solid var(--accent);
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .rec-card:hover { transform: translateX(4px); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+
+    .rec-card.r1 { background: linear-gradient(135deg,#fffde7,#fff9c4); border-left-color: var(--gold); }
+    .rec-card.r2 { background: linear-gradient(135deg,#f5f5f5,#eeeeee); border-left-color: var(--silver); }
+    .rec-card.r3 { background: linear-gradient(135deg,#fbe9e7,#ffccbc); border-left-color: var(--bronze); }
+
+    .rec-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .medal { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center;
+             justify-content: center; font-size: 1.1rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .r1 .medal { background: var(--gold); }
+    .r2 .medal { background: var(--silver); }
+    .r3 .medal { background: var(--bronze); }
+
+    .rec-title { font-size: 1.15rem; font-weight: 700; color: var(--text-h); }
+
+    .bar-label { font-size: .78rem; color: var(--text-mute); margin-bottom: 6px; }
+    .bar-track {
+      width: 100%; height: 18px;
+      background: #e0e0e0;
+      border-radius: 9px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 9px;
+      background: linear-gradient(90deg, var(--accent) 0%, #7c4dff 100%);
+      display: flex; align-items: center; justify-content: flex-end;
+      padding-right: 8px;
+      color: #fff; font-size: .7rem; font-weight: 700;
+      transition: width .7s cubic-bezier(.4,0,.2,1);
+    }
+    .cosine-val { font-family: monospace; font-size: .8rem; color: var(--text-mute); }
+
+    /* ── Footer ──────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: .8rem;
+      color: var(--text-mute);
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <header>
+    <h1>🚀 Tech Stack Recommender</h1>
+    <p>Project 3 · AI Recommendation Logic · Content-Based Filtering</p>
+    <span class="badge">DecodeLabs AI Engineering Internship — Batch 2026</span>
+  </header>
+
+  <!-- Input card -->
+  <div class="card">
+    <h2>⚙️ Configuration</h2>
+
+    <!-- Mode toggle -->
+    <div class="mode-row">
+      <button class="mode-btn active" id="modeLocal" onclick="setMode('local')">
+        🖥️ Local (built-in dataset)
+      </button>
+      <button class="mode-btn" id="modeApi" onclick="setMode('api')">
+        🌐 API (live FastAPI backend)
+      </button>
+    </div>
+
+    <!-- API URL row (visible in API mode) -->
+    <div id="apiUrlRow">
+      <label>API URL:</label>
+      <input id="apiUrl" type="text" value="http://127.0.0.1:8000"/>
+      <span id="apiStatus">–</span>
+      <button class="btn btn-add" onclick="checkApi()" style="padding:9px 14px;font-size:.8rem;">Ping</button>
+    </div>
+
+    <div class="info-banner">
+      <b>ℹ️ How it works:</b> Enter at least <b>3 skills</b> — natural language is fine!
+      The engine strips noise words (<em>"I know", "basic", "and"</em>), resolves synonyms
+      (<em>"K8s" → kubernetes</em>, <em>"Frontend Dev" → web design</em>), fuzzy-matches
+      near-typos, then runs <b>TF-IDF + Cosine Similarity</b> to return your top career paths.
+    </div>
+
+    <h2>📝 Your Skills</h2>
+
+    <div class="error-box" id="errorBox"></div>
+
+    <div class="skill-list" id="skillList">
+      <div class="skill-row">
+        <input type="text" class="skill-input" placeholder="e.g. Python"/>
+      </div>
+      <div class="skill-row">
+        <input type="text" class="skill-input" placeholder="e.g. Cloud Computing"/>
+      </div>
+      <div class="skill-row">
+        <input type="text" class="skill-input" placeholder="e.g. Docker"/>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-add"   onclick="addRow()">＋ Add skill</button>
+      <button class="btn btn-clear" onclick="clearAll()">✕ Clear all</button>
+    </div>
+
+    <button class="btn btn-go" onclick="run()">🎯 Get Recommendations</button>
+  </div>
+
+  <!-- Results card -->
+  <div class="card">
+    <div class="spinner-wrap" id="spinner">
+      <div class="spinner"></div>
+      <p style="color:var(--text-mute);font-size:.9rem;">Running pipeline…</p>
+    </div>
+
+    <div class="results-wrap" id="results">
+      <h2>✨ Your Top Career Paths</h2>
+      <!-- pipeline trace -->
+      <div class="trace" id="trace"></div>
+      <!-- rec cards -->
+      <div id="recCards"></div>
+    </div>
+  </div>
+
+  <footer>
+    DecodeLabs · Batch 2026 · Built with TF-IDF + Cosine Similarity
+  </footer>
+</div>
+
+<script>
+// ── Configuration ─────────────────────────────────────────────────────────
+let MODE = 'local';   // 'local' | 'api'
+
+function setMode(m) {
+  MODE = m;
+  document.getElementById('modeLocal').classList.toggle('active', m === 'local');
+  document.getElementById('modeApi').classList.toggle('active', m === 'api');
+  const row = document.getElementById('apiUrlRow');
+  m === 'api' ? row.classList.add('visible') : row.classList.remove('visible');
+}
+
+async function checkApi() {
+  const base = document.getElementById('apiUrl').value.replace(/\/$/, '');
+  const el   = document.getElementById('apiStatus');
+  try {
+    const r = await fetch(base + '/health');
+    const d = await r.json();
+    el.textContent = `✓ ${d.job_roles_loaded} roles`;
+    el.className   = 'ok';
+  } catch {
+    el.textContent = '✗ Unreachable';
+    el.className   = 'err';
+  }
+}
+
+// ── DOM helpers ───────────────────────────────────────────────────────────
+function addRow(placeholder = 'Enter a skill…') {
+  const list = document.getElementById('skillList');
+  const row  = document.createElement('div');
+  row.className = 'skill-row';
+  row.innerHTML = `
+    <input type="text" class="skill-input" placeholder="${placeholder}"/>
+    <button class="btn-rm" onclick="this.parentElement.remove()" title="Remove">✕</button>`;
+  list.appendChild(row);
+  row.querySelector('input').focus();
+}
+
+function clearAll() {
+  document.querySelectorAll('.skill-input').forEach(i => i.value = '');
+  document.getElementById('errorBox').classList.remove('show');
+  document.getElementById('results').classList.remove('show');
+}
+
+function getSkills() {
+  return [...document.querySelectorAll('.skill-input')]
+    .map(i => i.value.trim()).filter(Boolean);
+}
+
+function showError(msg) {
+  const b = document.getElementById('errorBox');
+  b.textContent = msg;
+  b.classList.add('show');
+}
+function clearError() {
+  document.getElementById('errorBox').classList.remove('show');
+}
+
+// ── Main run ──────────────────────────────────────────────────────────────
+async function run() {
+  clearError();
+  const raw = getSkills();
+  if (!raw.length) { showError('⚠️ Please enter at least one skill.'); return; }
+
+  document.getElementById('spinner').classList.add('show');
+  document.getElementById('results').classList.remove('show');
+
+  if (MODE === 'api') {
+    await runViaApi(raw);
+  } else {
+    await runLocal(raw);
+  }
+  document.getElementById('spinner').classList.remove('show');
+}
+
+// ── LOCAL ENGINE ──────────────────────────────────────────────────────────
+// Mirrors recommendation_engine.py exactly (all 3 improvements included)
+
+const STOP_WORDS = new Set([
+  'i',"i'm",'im','know','knowing','knows',
+  'and','or','the','a','an','of','in','to','for',
+  'with','have','has','am','is','are','was','were',
+  'be','been','being','do','does','did',
+  'can','could','would','should','will','may','might',
+  'my','your','his','her','its','our','their',
+  'this','that','these','those',
+  'some','any','few','more','most','other','such',
+  'no','not','only','same','so','than','too','very',
+  'basic','advanced','expert','beginner','intermediate',
+  'good','great','strong','little','bit',
+  'also','well','like','about','around','experience',
+  'knowledge','understanding','skills','skill',
+  'technology','technologies','tool','tools',
+  'work','working','use','using','used',
+]);
+
+const SYNONYM_MAP = {
+  'frontend developer':'web design','front-end':'frontend development',
+  'front end':'frontend development','ui developer':'web design',
+  'ui/ux':'web design','reactjs':'react','react.js':'react',
+  'react js':'react','vuejs':'vue.js','vue js':'vue.js',
+  'angularjs':'angular','nextjs':'react','next.js':'react',
+  'backend developer':'backend development','back-end':'backend development',
+  'back end':'backend development','nodejs':'node.js','node js':'node.js',
+  'expressjs':'node.js','springboot':'spring boot','spring-boot':'spring boot',
+  'fastapi':'python','flask':'python','django':'python',
+  'ml':'machine learning','deep learning':'neural networks','dl':'neural networks',
+  'ai':'machine learning','artificial intelligence':'machine learning',
+  'nlp':'machine learning','data science':'data analysis',
+  'data engineering':'data analysis','sklearn':'scikit-learn',
+  'scikit learn':'scikit-learn','tf':'tensorflow','pytorch':'neural networks',
+  'keras':'tensorflow','cv':'computer vision',
+  'devops':'ci/cd','k8s':'kubernetes','kube':'kubernetes',
+  'aws cloud':'aws','amazon web services':'aws','gcp':'google cloud',
+  'google cloud platform':'google cloud','azure cloud':'azure',
+  'microsoft azure':'azure','iac':'terraform',
+  'infrastructure as code':'terraform','github actions':'ci/cd',
+  'gitlab ci':'ci/cd','cicd':'ci/cd','ci cd':'ci/cd',
+  'shell scripting':'bash','shell':'bash',
+  'database':'database design','databases':'database design',
+  'rdbms':'sql','postgres':'postgresql','mongo':'mongodb',
+  'nosql':'mongodb','mysql database':'mysql',
+  'cybersec':'cybersecurity','infosec':'cybersecurity',
+  'pentesting':'penetration testing','pen testing':'penetration testing',
+  'appsec':'cybersecurity',
+  'oop':'java','object oriented':'java','git version control':'git',
+  'version control':'git','rest api':'apis','restful':'apis','rest':'apis',
+  'graphql api':'graphql','microservice':'microservices',
+  'cloud computing':'aws','cloud':'aws',
+  'automation testing':'automation','test automation':'automation',
+};
+
+// Job roles — canonical tags (lowercase, matches CSV)
+const JOB_DATA = {
+  'Data Scientist':              ['python','machine learning','sql','data analysis','statistics','pandas','numpy','tensorflow','scikit-learn','jupyter','visualization','linear algebra'],
+  'DevOps Engineer':             ['docker','kubernetes','aws','git','ci/cd','jenkins','linux','terraform','ansible','cloud computing','automation','monitoring'],
+  'Backend Developer':           ['java','python','sql','apis','microservices','spring boot','node.js','database design','caching','message queues','rest','graphql'],
+  'Frontend Developer':          ['javascript','react','html','css','typescript','vue.js','angular','web design','responsive design','testing','version control'],
+  'Cloud Architect':             ['aws','azure','google cloud','kubernetes','docker','terraform','security','network architecture','scalability','cost optimization'],
+  'Systems Administrator':       ['linux','windows','networking','security','databases','cloud computing','automation','monitoring','troubleshooting','infrastructure'],
+  'Machine Learning Engineer':   ['python','machine learning','deep learning','tensorflow','pytorch','neural networks','data processing','model optimization','computer vision'],
+  'Database Administrator':      ['sql','database design','mysql','postgresql','mongodb','performance tuning','backup recovery','data security','indexing','query optimization'],
+  'Security Engineer':           ['cybersecurity','network security','encryption','vulnerability assessment','penetration testing','cloud security','risk management','authentication'],
+  'Full Stack Developer':        ['javascript','react','node.js','mongodb','express','apis','html','css','database design','git','responsive design','testing'],
+  'Solution Architect':          ['system design','cloud computing','microservices','architecture patterns','scalability','aws','docker','kubernetes','problem solving'],
+  'QA Engineer':                 ['testing','automation','selenium','java','python','bug tracking','performance testing','regression testing','test planning','ci/cd'],
+  'AI/ML Researcher':            ['python','machine learning','deep learning','research','mathematics','statistics','tensorflow','pytorch','papers','algorithm design'],
+  'DevOps Automation Engineer':  ['python','bash','docker','kubernetes','jenkins','aws','infrastructure as code','git','monitoring','cloud computing','automation'],
+  'Site Reliability Engineer':   ['linux','python','go','kubernetes','monitoring','incident response','performance optimization','database administration','automation','cloud'],
+};
+
+// ── IMPROVEMENT 1 — Stop-word filter ─────────────────────────────────────
+function sanitize(rawSkills) {
+  const out = [];
+  for (const raw of rawSkills) {
+    const parts = raw.split(/[,]+/);
+    for (const part of parts) {
+      const tokens = part.trim().split(/\s+/);
+      for (let tok of tokens) {
+        tok = tok.replace(/^["'()\[\]{}!?;:]+|["'()\[\]{}!?;:]+$/g, '');
+        if (!tok || STOP_WORDS.has(tok.toLowerCase()) || tok.length < 2) continue;
+        out.push(tok);
+      }
+    }
+  }
+  return out;
+}
+
+// ── IMPROVEMENT 2a — Synonym mapping ─────────────────────────────────────
+function applySynonyms(tokens) {
+  const lc  = tokens.map(t => t.toLowerCase());
+  const out = [];
+  let i = 0;
+  while (i < lc.length) {
+    if (i + 1 < lc.length) {
+      const bigram = lc[i] + ' ' + lc[i+1];
+      if (SYNONYM_MAP[bigram]) { out.push(SYNONYM_MAP[bigram]); i += 2; continue; }
+    }
+    out.push(SYNONYM_MAP[lc[i]] ?? lc[i]);
+    i++;
+  }
+  return out;
+}
+
+// ── IMPROVEMENT 2b — Character bigram fuzzy match ─────────────────────────
+function buildBigrams(s) {
+  s = s.toLowerCase().replace(/\s+/g, '_');
+  if (s.length < 2) return new Set([s]);
+  const bg = new Set();
+  for (let i = 0; i < s.length - 1; i++) bg.add(s.slice(i, i+2));
+  return bg;
+}
+function bigramSim(a, b) {
+  const sa = buildBigrams(a), sb = buildBigrams(b);
+  let inter = 0;
+  for (const g of sa) if (sb.has(g)) inter++;
+  const union = sa.size + sb.size - inter;
+  return union ? inter / union : 0;
+}
+
+function buildVocab() {
+  const vocab = new Set();
+  Object.values(JOB_DATA).forEach(skills => skills.forEach(s => vocab.add(s)));
+  return vocab;
+}
+const VOCAB = buildVocab();
+
+function fuzzyMatch(skill, threshold = 0.55) {
+  if (VOCAB.has(skill)) return skill;
+  let best = skill, bestScore = 0;
+  for (const v of VOCAB) {
+    const s = bigramSim(skill, v);
+    if (s > bestScore) { bestScore = s; best = v; }
+  }
+  return bestScore >= threshold ? best : skill;
+}
+
+// ── TF-IDF + Cosine (exact mirror of Python, all lowercase) ───────────────
+class TFIDF {
+  constructor() { this.idf = {}; }
+
+  fit(docs) {                         // docs = array of arrays of strings
+    const N = docs.length;
+    const dc = {};
+    for (const doc of docs) {
+      for (const t of new Set(doc)) dc[t] = (dc[t] || 0) + 1;
+    }
+    this.vocab = Object.keys(dc);
+    for (const t of this.vocab)
+      this.idf[t] = dc[t] ? Math.log(N / dc[t]) : 0;
+  }
+
+  transform(doc) {                    // doc = array of strings (already lowercase)
+    const total = doc.length;
+    const tc    = {};
+    for (const t of doc) tc[t] = (tc[t] || 0) + 1;
+    const vec = {};
+    for (const [t, c] of Object.entries(tc)) {
+      const idf = this.idf[t] || 0;
+      if (idf > 0) vec[t] = (c / total) * idf;
+    }
+    return vec;
+  }
+}
+
+function cosineSim(a, b) {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  let dot = 0, ma = 0, mb = 0;
+  for (const k of keys) {
+    const av = a[k] || 0, bv = b[k] || 0;
+    dot += av * bv; ma += av * av; mb += bv * bv;
+  }
+  if (!ma || !mb) return 0;
+  return Math.max(-1, Math.min(1, dot / (Math.sqrt(ma) * Math.sqrt(mb))));
+}
+
+// ── Full local pipeline ────────────────────────────────────────────────────
+function runLocalPipeline(rawSkills) {
+  // Step 1 — Ingestion
+  const cleaned   = sanitize(rawSkills);
+  const synonymed = applySynonyms(cleaned);
+  const fuzzy     = synonymed.map(s => fuzzyMatch(s));
+
+  if (fuzzy.length < 3)
+    throw new Error(`Only ${fuzzy.length} valid skill(s) after filtering. Add more specific skills.`);
+
+  // Fit vectorizer on job data
+  const tfidf = new TFIDF();
+  const jobDocs = Object.values(JOB_DATA);   // already lowercase arrays
+  tfidf.fit(jobDocs);
+
+  // Step 2 — Scoring
+  const userVec = tfidf.transform(fuzzy);
+  const scores  = {};
+  for (const [role, skills] of Object.entries(JOB_DATA)) {
+    const jobVec = tfidf.transform(skills);
+    scores[role] = cosineSim(userVec, jobVec);
+  }
+
+  // Step 3 — Sorting
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+
+  // Step 4 — Filtering
+  const top3 = sorted.slice(0, 3);
+
+  return { cleaned, synonymed, fuzzy, top3 };
+}
+
+async function runLocal(rawSkills) {
+  await new Promise(r => setTimeout(r, 600));   // tiny delay so spinner shows
+  try {
+    const { cleaned, synonymed, fuzzy, top3 } = runLocalPipeline(rawSkills);
+    renderTrace({ raw: rawSkills, cleaned, synonymed, fuzzy }, 'local');
+    renderCards(top3);
+    document.getElementById('results').classList.add('show');
+  } catch(e) {
+    showError('⚠️ ' + e.message);
+  }
+}
+
+// ── API MODE ──────────────────────────────────────────────────────────────
+async function runViaApi(rawSkills) {
+  const base = document.getElementById('apiUrl').value.replace(/\/$/, '');
+  try {
+    const resp = await fetch(base + '/recommend', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ skills: rawSkills, top_n: 3 }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || resp.statusText);
+    }
+    const data = await resp.json();
+    renderTrace({
+      raw:       data.input_received,
+      cleaned:   data.input_after_cleaning,
+      synonymed: data.input_after_cleaning,
+      fuzzy:     data.input_after_cleaning,
+    }, 'api');
+    const top3 = data.recommendations.map(r => [r.role, r.score]);
+    renderCards(top3);
+    document.getElementById('results').classList.add('show');
+  } catch(e) {
+    showError('⚠️ API error: ' + e.message);
+  }
+}
+
+// ── Render helpers ────────────────────────────────────────────────────────
+function renderTrace({ raw, cleaned, synonymed, fuzzy }, src) {
+  const srcLabel = src === 'api'
+    ? `<span class="val">FastAPI backend (live CSV)</span>`
+    : `<span class="val">Local built-in dataset</span>`;
+
+  document.getElementById('trace').innerHTML = `
+<span class="step">[SOURCE   ]</span> ${srcLabel}
+<span class="step">[RAW INPUT]</span> <span class="val">${raw.join(', ')}</span>
+<span class="step">[CLEANED  ]</span> <span class="val">${cleaned.join(', ')}</span>
+<span class="step">[SYNONYMS ]</span> <span class="val">${synonymed.join(', ')}</span>
+<span class="step">[FUZZY    ]</span> <span class="val">${fuzzy.join(', ')}</span>`;
+}
+
+function renderCards(top3) {
+  const wrap = document.getElementById('recCards');
+  wrap.innerHTML = '';
+  const classes = ['r1', 'r2', 'r3'];
+  const medals  = ['🥇', '🥈', '🥉'];
+
+  top3.forEach(([role, score], i) => {
+    const pct = (score * 100).toFixed(1);
+    const div = document.createElement('div');
+    div.className = `rec-card ${classes[i]}`;
+    div.innerHTML = `
+      <div class="rec-header">
+        <div class="medal">${medals[i]}</div>
+        <div class="rec-title">${role}</div>
+      </div>
+      <div class="bar-label">Match Score</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%">${pct}%</div>
+      </div>
+      <div class="cosine-val">Cosine Similarity: ${score.toFixed(4)}</div>`;
+    wrap.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>
