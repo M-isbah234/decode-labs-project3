@@ -1,14 +1,4 @@
-"""
-Project 3: AI Recommendation Logic — Tech Stack Recommender
-DecodeLabs AI Engineering Internship (Batch 2026)
-
-Improvements shipped in this version:
-  1. Stop-word filtering      — strips "I", "know", "and", "basic" etc.
-  2. Synonym / N-gram mapping — "K8s"→kubernetes, "Frontend Developer"→web design
-  3. Fuzzy bigram matching    — catches near-typos like "kubernets"
-  4. FastAPI backend          — HTML reads live CSV via HTTP
-  5. Case-normalisation fix   — eliminates the cosine-always-0 bug
-"""
+"Project 3"
 
 import math
 import re
@@ -16,9 +6,6 @@ from collections import defaultdict
 from typing import List, Dict, Tuple
 import csv
 
-# ─────────────────────────────────────────────────────────────────
-# KNOWN MULTI-WORD SKILLS (preserved during sentence-mode parsing)
-# ─────────────────────────────────────────────────────────────────
 KNOWN_BIGRAMS = {
     "machine learning", "database design", "cloud computing",
     "deep learning", "neural networks", "spring boot",
@@ -34,9 +21,6 @@ KNOWN_BIGRAMS = {
     "algorithm design", "node.js", "vue.js",
 }
 
-# ─────────────────────────────────────────────────────────────────
-# IMPROVEMENT 1 — STOP-WORD FILTER
-# ─────────────────────────────────────────────────────────────────
 STOP_WORDS = {
     "i", "i'm", "im", "know", "knowing", "knows",
     "and", "or", "the", "a", "an", "of", "in", "to", "for",
@@ -112,9 +96,6 @@ def sanitize_input(raw_skills: List[str]) -> List[str]:
     return out
 
 
-# ─────────────────────────────────────────────────────────────────
-# IMPROVEMENT 2a — SYNONYM / KEYWORD MAPPING
-# ─────────────────────────────────────────────────────────────────
 SYNONYM_MAP: Dict[str, str] = {
     # Frontend
     "frontend developer": "web design", "front-end": "web design",
@@ -187,9 +168,6 @@ def apply_synonyms(skills: List[str]) -> List[str]:
     return result
 
 
-# ─────────────────────────────────────────────────────────────────
-# IMPROVEMENT 2b — FUZZY / N-GRAM MATCHING
-# ─────────────────────────────────────────────────────────────────
 def _bigrams(s: str) -> set:
     s = s.lower().replace(" ", "_")
     if len(s) < 2:
@@ -206,10 +184,7 @@ def _bigram_jaccard(a: str, b: str) -> float:
 
 def fuzzy_match_skill(skill: str, vocabulary: set,
                       threshold: float = 0.50) -> str:
-    """
-    Improvement 2b: Find the closest vocabulary term by character-bigram
-    Jaccard similarity. Handles typos like "kubernets" → "kubernetes".
-    """
+   
     if skill in vocabulary:
         return skill
     best, best_score = skill, 0.0
@@ -219,10 +194,7 @@ def fuzzy_match_skill(skill: str, vocabulary: set,
             best_score, best = score, term
     return best if best_score >= threshold else skill
 
-
-# ─────────────────────────────────────────────────────────────────
 # TF-IDF VECTORIZER  (all terms stored/matched in lowercase)
-# ─────────────────────────────────────────────────────────────────
 class TFIDFVectorizer:
     def __init__(self):
         self.vocabulary: set = set()
@@ -256,10 +228,7 @@ class TFIDFVectorizer:
                 vec[t] = (c / total) * idf
         return vec
 
-
-# ─────────────────────────────────────────────────────────────────
 # COSINE SIMILARITY
-# ─────────────────────────────────────────────────────────────────
 class CosineSimilarityMatcher:
     @staticmethod
     def _mag(v: Dict[str, float]) -> float:
@@ -275,9 +244,6 @@ class CosineSimilarityMatcher:
         return max(-1.0, min(1.0, dot / (ma * mb)))
 
 
-# ─────────────────────────────────────────────────────────────────
-# 4-STEP RECOMMENDATION PIPELINE
-# ─────────────────────────────────────────────────────────────────
 class RecommendationPipeline:
     def __init__(self, top_n: int = 3):
         self.top_n = top_n
@@ -297,7 +263,7 @@ class RecommendationPipeline:
         for role, skills in self.job_roles.items():
             self.job_vectors[role] = self.vectorizer.transform(skills)
 
-    # ── Step 1: Ingestion ────────────────────────────────────────
+    #Step 1: Ingestion
     def step_1_ingest(self, raw_skills: List[str]) -> Dict[str, float]:
         cleaned   = sanitize_input(raw_skills)
         synonymed = apply_synonyms(cleaned)
@@ -317,20 +283,20 @@ class RecommendationPipeline:
             )
         return self.vectorizer.transform(final)
 
-    # ── Step 2: Scoring ──────────────────────────────────────────
+    #Step 2: Scoring
     def step_2_score(self, user_vec: Dict[str, float]) -> Dict[str, float]:
         scores = {role: self.matcher.cosine_similarity(user_vec, jv)
                   for role, jv in self.job_vectors.items()}
         print(f"[STEP 2: SCORING]  Scored {len(scores)} roles")
         return scores
 
-    # ── Step 3: Sorting ──────────────────────────────────────────
+    #Step 3: Sorting
     def step_3_sort(self, scores: Dict[str, float]) -> List[Tuple[str, float]]:
         ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
         print(f"[STEP 3: SORTING]  Best → {ranked[0][0]} ({ranked[0][1]:.4f})")
         return ranked
 
-    # ── Step 4: Filtering ────────────────────────────────────────
+    #Step 4: Filtering
     def step_4_filter(self, ranked: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
         top = ranked[: self.top_n]
         print(f"[STEP 4: FILTERING] Returning Top-{self.top_n}")
@@ -359,9 +325,7 @@ def display_recommendations(recommendations: List[Tuple[str, float]]) -> None:
         print(f"   Cosine : {score:.4f}")
 
 
-# ─────────────────────────────────────────────────────────────────
 # CLI ENTRY POINT
-# ─────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("\n🚀 Tech Stack Recommender — DecodeLabs Batch 2026")
     print("=" * 60)
