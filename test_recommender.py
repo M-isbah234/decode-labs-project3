@@ -1,7 +1,4 @@
-"""
-Test suite — Project 3 (improved)
-Tests stop-word filtering, synonym mapping, fuzzy matching, and pipeline scores.
-"""
+"Project 3"
 
 from recommendation_engine import (
     RecommendationPipeline, sanitize_input, apply_synonyms,
