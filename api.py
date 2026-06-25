@@ -1,9 +1,3 @@
-"""
-Improvement 3 — FastAPI Backend
-Serves recommendations from live raw_skills.csv via HTTP.
-The HTML frontend fetches from this instead of using hardcoded JS data.
-"""
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -14,7 +8,7 @@ import os
 
 from recommendation_engine import RecommendationPipeline
 
-# ── App setup ──────────────────────────────────────────────────────────────
+# ── App setup
 app = FastAPI(
     title="Tech Stack Recommender API",
     description="DecodeLabs Project 3 — AI Recommendation Logic",
@@ -28,12 +22,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Load pipeline once at startup ─────────────────────────────────────────
+# ── Load pipeline once at startup
 CSV_PATH = os.path.join(os.path.dirname(__file__), "raw_skills.csv")
 pipeline = RecommendationPipeline(top_n=3)
 pipeline.load_dataset(CSV_PATH)
 
-# ── Request / Response models ─────────────────────────────────────────────
+# ── Request / Response models
 class SkillsRequest(BaseModel):
     skills: List[str]
     top_n: int = 3
@@ -50,7 +44,7 @@ class RecommendationResponse(BaseModel):
     input_after_cleaning: List[str]
     recommendations: List[RecommendationItem]
 
-# ── Routes ────────────────────────────────────────────────────────────────
+# ── Routes
 @app.get("/")
 def root():
     return {
