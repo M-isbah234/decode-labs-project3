@@ -16,7 +16,6 @@ def sub(title):
     print(f"\n  ── {title}")
 
 
-# ─────────────────────────────────────────────────────────────────
 def test_stop_word_filter():
     section("IMPROVEMENT 1 — Stop-Word Filtering")
 
@@ -45,7 +44,6 @@ def test_stop_word_filter():
     print(f"\n  {'All stop-word tests passed ✓' if all_pass else 'Some tests FAILED ✗'}")
 
 
-# ─────────────────────────────────────────────────────────────────
 def test_synonym_mapping():
     section("IMPROVEMENT 2a — Synonym / Keyword Mapping")
 
@@ -78,7 +76,6 @@ def test_synonym_mapping():
     print(f"\n  {'All synonym tests passed ✓' if all_pass else 'Some tests FAILED ✗'}")
 
 
-# ─────────────────────────────────────────────────────────────────
 def test_fuzzy_matching():
     section("IMPROVEMENT 2b — Fuzzy / N-gram Matching")
 
@@ -109,7 +106,6 @@ def test_fuzzy_matching():
     print(f"\n  {'All fuzzy tests passed ✓' if all_pass else 'Some tests FAILED ✗'}")
 
 
-# ─────────────────────────────────────────────────────────────────
 def test_pipeline_scores():
     section("PIPELINE — 5 Recommendation Scenarios")
 
@@ -135,7 +131,6 @@ def test_pipeline_scores():
             print(f"  ✗ ERROR: {e}")
 
 
-# ─────────────────────────────────────────────────────────────────
 def test_cosine_not_zero():
     section("BUG-FIX VERIFICATION — Cosine must NOT be 0.0")
 
@@ -159,12 +154,8 @@ def test_cosine_not_zero():
     print(f"\n  {'Bug-fix verified ✓' if passed else 'Bug still present ✗'}")
 
 
-# ─────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("\n╔══════════════════════════════════════════════════════════════╗")
-    print("║  PROJECT 3 — IMPROVED TEST SUITE                            ║")
-    print("║  DecodeLabs AI Engineering Internship (Batch 2026)          ║")
-    print("╚══════════════════════════════════════════════════════════════╝")
+    print("PROJECT 3")
 
     test_stop_word_filter()
     test_synonym_mapping()
